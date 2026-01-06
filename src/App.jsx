@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import html2canvas from "html2canvas";
 
 function App() {
   const [jsonInput, setJsonInput] = useState("");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [selectedMetric, setSelectedMetric] = useState("user-story");
+  const [copyStatus, setCopyStatus] = useState({});
+
+  // Refs for each section
+  const defectRef = useRef(null);
+  const coverageRef = useRef(null);
+  const platformRef = useRef(null);
+  const dailyRef = useRef(null);
 
   const sampleJSON = {
     coverage: {
@@ -130,6 +138,132 @@ function App() {
     setJsonInput("");
     setData(null);
     setError("");
+    setCopyStatus({});
+  };
+
+  // Copy visual as image to clipboard
+  const copyVisualToClipboard = async (elementRef, sectionName) => {
+    if (!elementRef.current) return;
+
+    try {
+      setCopyStatus({ [sectionName]: "copying" });
+
+      // Convert HTML element to canvas
+      const canvas = await html2canvas(elementRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+      });
+
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        try {
+          // Copy to clipboard using Clipboard API
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              "image/png": blob,
+            }),
+          ]);
+
+          setCopyStatus({ [sectionName]: "success" });
+          setTimeout(() => setCopyStatus({}), 2000);
+        } catch (err) {
+          console.error("Clipboard API failed:", err);
+          setCopyStatus({ [sectionName]: "error" });
+          setTimeout(() => setCopyStatus({}), 2000);
+        }
+      }, "image/png");
+    } catch (err) {
+      console.error("Screenshot failed:", err);
+      setCopyStatus({ [sectionName]: "error" });
+      setTimeout(() => setCopyStatus({}), 2000);
+    }
+  };
+
+  const CopyButton = ({ sectionName, elementRef }) => {
+    const status = copyStatus[sectionName];
+
+    return (
+      <button
+        onClick={() => copyVisualToClipboard(elementRef, sectionName)}
+        disabled={status === "copying"}
+        className={`px-5 py-2 bg-white border-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
+          status === "success"
+            ? "border-green-500 text-green-600 bg-green-50"
+            : status === "error"
+            ? "border-red-500 text-red-600 bg-red-50"
+            : "border-blue-500 text-blue-600 hover:bg-blue-50"
+        }`}
+      >
+        {status === "copying" ? (
+          <>
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Copying...
+          </>
+        ) : status === "success" ? (
+          <>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Copied!
+          </>
+        ) : status === "error" ? (
+          <>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            Failed
+          </>
+        ) : (
+          <>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy Visual
+          </>
+        )}
+      </button>
+    );
   };
 
   if (!data) {
@@ -224,7 +358,10 @@ function App() {
 
         {/* Defect Status Overview */}
         {data.defects && (
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+          <div
+            ref={defectRef}
+            className="bg-white rounded-xl shadow-lg p-8 mb-8"
+          >
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
@@ -237,23 +374,9 @@ function App() {
                   </span>
                 </p>
               </div>
-              <button className="px-5 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 flex items-center gap-2 transition-all">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Copy Visual
-              </button>
+              <CopyButton sectionName="defect" elementRef={defectRef} />
             </div>
 
-            {/* Status Bar */}
             <div className="flex w-full h-20 rounded-lg shadow-md overflow-hidden mb-6">
               {data.defects.statuses.map((item, index) => (
                 <div
@@ -273,7 +396,6 @@ function App() {
               ))}
             </div>
 
-            {/* Legend */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {data.defects.statuses.map((item, index) => (
                 <div key={index} className="flex items-center gap-3">
@@ -296,25 +418,15 @@ function App() {
         )}
 
         {/* Coverage Report */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        <div
+          ref={coverageRef}
+          className="bg-white rounded-xl shadow-lg p-8 mb-8"
+        >
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-2xl font-bold text-gray-800">
               Coverage Report
             </h2>
-            <button className="px-5 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 flex items-center gap-2 transition-all">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              Copy Visual
-            </button>
+            <CopyButton sectionName="coverage" elementRef={coverageRef} />
           </div>
 
           <div className="mb-8">
@@ -413,7 +525,10 @@ function App() {
         </div>
 
         {/* Execution by Platform */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        <div
+          ref={platformRef}
+          className="bg-white rounded-xl shadow-lg p-8 mb-8"
+        >
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">
@@ -423,20 +538,7 @@ function App() {
                 Cross-platform test results breakdown
               </p>
             </div>
-            <button className="px-5 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 flex items-center gap-2 transition-all">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              Copy Visual
-            </button>
+            <CopyButton sectionName="platform" elementRef={platformRef} />
           </div>
 
           {data.platform?.map((item, index) => (
@@ -509,7 +611,7 @@ function App() {
         </div>
 
         {/* Daily Execution */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div ref={dailyRef} className="bg-white rounded-xl shadow-lg p-8">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">
@@ -519,20 +621,7 @@ function App() {
                 Test velocity and execution trends
               </p>
             </div>
-            <button className="px-5 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 flex items-center gap-2 transition-all">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              Copy Visual
-            </button>
+            <CopyButton sectionName="daily" elementRef={dailyRef} />
           </div>
 
           {data.daily?.map((item, index) => (
