@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
-import ReactECharts from "echarts-for-react";
+import * as echarts from "echarts";
 
 function App() {
   const [selectedReport, setSelectedReport] = useState(null);
@@ -9,6 +9,10 @@ function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
+
+  // New state for filters
+  const [coverageMetric, setCoverageMetric] = useState("user-story");
+  const [labMetric, setLabMetric] = useState("suite-distribution");
 
   const chartRef = useRef(null);
 
@@ -31,17 +35,7 @@ function App() {
         name: "Overall Execution Status (Pie Chart)",
         icon: "🥧",
       },
-      {
-        id: "suite-distribution",
-        name: "Suite Status Distribution",
-        icon: "📊",
-      },
-      { id: "platform-execution", name: "Execution by Platform", icon: "💻" },
-      {
-        id: "daily-execution",
-        name: "Daily Execution (Bar Chart)",
-        icon: "📅",
-      },
+      { id: "lab-combined", name: "Suite Status Distribution", icon: "📊" },
     ],
     defect: [
       { id: "defect-executive", name: "Executive Summary", icon: "📊" },
@@ -50,7 +44,7 @@ function App() {
     ],
   };
 
-  // Sample JSON for each chart type WITH COLORS
+  // Sample JSON - COMBINED JSON FOR LAB CHARTS
   const sampleJSONs = {
     "executive-summary": {
       totalRequirements: 156,
@@ -58,6 +52,13 @@ function App() {
       notCovered: 32,
       coverageRate: 79.5,
       totalTestCases: 238,
+      colors: {
+        totalRequirements: "#3b82f6",
+        covered: "#14b8a6",
+        notCovered: "#f87171",
+        coverageRate: "#14b8a6",
+        totalTestCases: "#818cf8",
+      },
     },
     "coverage-report": {
       metric: "user-story",
@@ -133,6 +134,14 @@ function App() {
       failed: 38,
       blocked: 12,
       noRun: 13,
+      colors: {
+        totalTestCases: "#3b82f6",
+        activeSuites: "#a855f7",
+        passed: "#22c55e",
+        failed: "#ef4444",
+        blocked: "#9ca3af",
+        noRun: "#fbbf24",
+      },
     },
     "execution-status": {
       total: 252,
@@ -147,87 +156,90 @@ function App() {
         noRun: "#ffd700",
       },
     },
-    "suite-distribution": {
-      total: 15,
-      inProgress: 8,
-      completed: 5,
-      notStarted: 2,
-      colors: {
-        inProgress: "#4169e1",
-        completed: "#3cb371",
-        notStarted: "#c0c0c0",
+    // COMBINED JSON FOR LAB CHARTS
+    "lab-combined": {
+      suiteDistribution: {
+        total: 15,
+        inProgress: 8,
+        completed: 5,
+        notStarted: 2,
+        colors: {
+          inProgress: "#4169e1",
+          completed: "#3cb371",
+          notStarted: "#c0c0c0",
+        },
       },
-    },
-    "platform-execution": {
-      platforms: [
-        {
-          platform: "Chrome",
-          pass: 111,
-          fail: 21,
-          blocked: 10,
-          noRun: 0,
-          total: 142,
+      platformExecution: {
+        platforms: [
+          {
+            platform: "Chrome",
+            pass: 111,
+            fail: 21,
+            blocked: 10,
+            noRun: 0,
+            total: 142,
+          },
+          {
+            platform: "Firefox",
+            pass: 48,
+            fail: 12,
+            blocked: 7,
+            noRun: 1,
+            total: 68,
+          },
+          {
+            platform: "Safari",
+            pass: 29,
+            fail: 5,
+            blocked: 3,
+            noRun: 4,
+            total: 38,
+          },
+        ],
+        colors: {
+          pass: "#3cb371",
+          fail: "#ff8c69",
+          blocked: "#c0c0c0",
+          noRun: "#ffd700",
         },
-        {
-          platform: "Firefox",
-          pass: 48,
-          fail: 12,
-          blocked: 7,
-          noRun: 1,
-          total: 68,
-        },
-        {
-          platform: "Safari",
-          pass: 29,
-          fail: 5,
-          blocked: 3,
-          noRun: 1,
-          total: 38,
-        },
-      ],
-      colors: {
-        pass: "#3cb371",
-        fail: "#ff8c69",
-        blocked: "#c0c0c0",
-        noRun: "#ffd700",
       },
-    },
-    "daily-execution": {
-      days: [
-        {
-          date: "Mon, Dec 16",
-          tests: 45,
-          day: "completed",
-          label: "45 Tests Executed",
+      dailyExecution: {
+        days: [
+          {
+            date: "Mon, Dec 16",
+            tests: 45,
+            day: "completed",
+            label: "45 Tests Executed",
+          },
+          {
+            date: "Tue, Dec 17",
+            tests: 62,
+            day: "completed",
+            label: "62 Tests Executed",
+          },
+          {
+            date: "Weds, Dec 18",
+            tests: 78,
+            day: "completed",
+            label: "78 Tests Executed (Peak)",
+          },
+          {
+            date: "Thurs, Dec 19",
+            tests: 52,
+            day: "completed",
+            label: "52 Tests Executed",
+          },
+          {
+            date: "Fri, Dec 20 (Today)",
+            tests: 11,
+            day: "today",
+            label: "11 Tests Executed (In Progress)",
+          },
+        ],
+        colors: {
+          completed: "#3cb371",
+          today: "#4169e1",
         },
-        {
-          date: "Tue, Dec 17",
-          tests: 62,
-          day: "completed",
-          label: "62 Tests Executed",
-        },
-        {
-          date: "Weds, Dec 18",
-          tests: 78,
-          day: "completed",
-          label: "78 Tests Executed (Peak)",
-        },
-        {
-          date: "Thurs, Dec 19",
-          tests: 52,
-          day: "completed",
-          label: "52 Tests Executed",
-        },
-        {
-          date: "Fri, Dec 20 (Today)",
-          tests: 11,
-          day: "today",
-          label: "11 Tests Executed (In Progress)",
-        },
-      ],
-      colors: {
-        completed: "#3cb371",
-        today: "#4169e1",
       },
     },
     "defect-executive": {
@@ -236,6 +248,13 @@ function App() {
       high: 28,
       medium: 34,
       low: 11,
+      colors: {
+        total: "#6b7280",
+        critical: "#ef4444",
+        high: "#fb923c",
+        medium: "#fbbf24",
+        low: "#22c55e",
+      },
     },
     "defect-status": {
       total: 85,
@@ -290,6 +309,8 @@ function App() {
     setData(null);
     setError("");
     setCopyStatus("");
+    setCoverageMetric("user-story");
+    setLabMetric("suite-distribution");
   };
 
   const handleBackToChartSelection = () => {
@@ -298,6 +319,8 @@ function App() {
     setData(null);
     setError("");
     setCopyStatus("");
+    setCoverageMetric("user-story");
+    setLabMetric("suite-distribution");
   };
 
   const copyVisualToClipboard = async () => {
@@ -397,6 +420,92 @@ function App() {
         )}
       </button>
     );
+  };
+
+  // FIXED PIE CHART - Shows "75% Pass Rate" in center by default
+  const PieChart = ({ data }) => {
+    const chartDivRef = useRef(null);
+
+    useEffect(() => {
+      if (!chartDivRef.current) return;
+
+      const myChart = echarts.init(chartDivRef.current);
+      const passRate = Math.round((data.passed / data.total) * 100);
+
+      const option = {
+        tooltip: {
+          trigger: "item",
+          // FIXED: Show correct percentage format
+          formatter: "{b}: {c} ({d}%)",
+        },
+        graphic: {
+          type: "text",
+          left: "center",
+          top: "center",
+          style: {
+            text: `${passRate}%\nPass Rate`,
+            textAlign: "center",
+            fill: "#333",
+            fontSize: 32,
+            fontWeight: "bold",
+            lineHeight: 40,
+          },
+        },
+        series: [
+          {
+            name: "Test Status",
+            type: "pie",
+            radius: ["40%", "70%"],
+            avoidLabelOverlap: false,
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: "#fff",
+              borderWidth: 2,
+            },
+            label: {
+              show: false,
+            },
+            emphasis: {
+              label: {
+                show: false,
+              },
+              scale: true,
+              scaleSize: 10,
+            },
+            data: [
+              {
+                value: data.passed,
+                name: "Passed",
+                itemStyle: { color: data.colors?.passed || "#3cb371" },
+              },
+              {
+                value: data.failed,
+                name: "Failed",
+                itemStyle: { color: data.colors?.failed || "#ff8c69" },
+              },
+              {
+                value: data.blocked,
+                name: "Blocked",
+                itemStyle: { color: data.colors?.blocked || "#c0c0c0" },
+              },
+              {
+                value: data.noRun,
+                name: "No Run",
+                itemStyle: { color: data.colors?.noRun || "#ffd700" },
+              },
+            ],
+          },
+        ],
+      };
+
+      myChart.setOption(option);
+
+      return () => {
+        myChart.dispose();
+      };
+    }, [data]);
+
+    return <div ref={chartDivRef} style={{ width: "100%", height: "400px" }} />;
   };
 
   // STEP 1: Report Type Selection
@@ -592,7 +701,6 @@ function App() {
               </button>
             </div>
 
-            {/* JSON Structure Help */}
             <div className="mt-8 p-5 bg-blue-50 border-2 border-blue-200 rounded-lg">
               <h3 className="text-sm font-bold text-blue-900 mb-3">
                 📋 Expected JSON Structure:
@@ -649,27 +757,62 @@ function App() {
               <CopyButton />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg p-6 text-center text-white">
+              <div
+                className="rounded-lg p-6 text-center text-white"
+                style={{
+                  background: `linear-gradient(to bottom right, ${
+                    data.colors?.totalRequirements || "#3b82f6"
+                  }, ${data.colors?.totalRequirements || "#3b82f6"}DD)`,
+                }}
+              >
                 <div className="text-4xl font-bold mb-2">
                   {data.totalRequirements}
                 </div>
                 <div className="text-sm font-semibold">Total Requirements</div>
               </div>
-              <div className="bg-gradient-to-br from-teal-300 to-teal-400 rounded-lg p-6 text-center text-white">
+              <div
+                className="rounded-lg p-6 text-center text-white"
+                style={{
+                  background: `linear-gradient(to bottom right, ${
+                    data.colors?.covered || "#14b8a6"
+                  }, ${data.colors?.covered || "#14b8a6"}DD)`,
+                }}
+              >
                 <div className="text-4xl font-bold mb-2">{data.covered}</div>
                 <div className="text-sm font-semibold">Covered</div>
               </div>
-              <div className="bg-gradient-to-br from-red-300 to-red-400 rounded-lg p-6 text-center text-white">
+              <div
+                className="rounded-lg p-6 text-center text-white"
+                style={{
+                  background: `linear-gradient(to bottom right, ${
+                    data.colors?.notCovered || "#f87171"
+                  }, ${data.colors?.notCovered || "#f87171"}DD)`,
+                }}
+              >
                 <div className="text-4xl font-bold mb-2">{data.notCovered}</div>
                 <div className="text-sm font-semibold">Not Covered</div>
               </div>
-              <div className="bg-gradient-to-br from-teal-300 to-teal-400 rounded-lg p-6 text-center text-white">
+              <div
+                className="rounded-lg p-6 text-center text-white"
+                style={{
+                  background: `linear-gradient(to bottom right, ${
+                    data.colors?.coverageRate || "#14b8a6"
+                  }, ${data.colors?.coverageRate || "#14b8a6"}DD)`,
+                }}
+              >
                 <div className="text-4xl font-bold mb-2">
                   {data.coverageRate}%
                 </div>
                 <div className="text-sm font-semibold">Coverage Rate</div>
               </div>
-              <div className="bg-gradient-to-br from-indigo-300 to-indigo-400 rounded-lg p-6 text-center text-white">
+              <div
+                className="rounded-lg p-6 text-center text-white"
+                style={{
+                  background: `linear-gradient(to bottom right, ${
+                    data.colors?.totalTestCases || "#818cf8"
+                  }, ${data.colors?.totalTestCases || "#818cf8"}DD)`,
+                }}
+              >
                 <div className="text-4xl font-bold mb-2">
                   {data.totalTestCases}
                 </div>
@@ -679,6 +822,7 @@ function App() {
           </div>
         )}
 
+        {/* COVERAGE REPORT WITH DROPDOWN FILTER */}
         {selectedChart === "coverage-report" && (
           <div ref={chartRef} className="bg-white rounded-xl shadow-lg p-8">
             <div className="flex justify-between items-center mb-6">
@@ -693,9 +837,22 @@ function App() {
               <CopyButton />
             </div>
 
-            {/* REMOVED SELECT METRIC DROPDOWN */}
+            {/* DROPDOWN FILTER */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Metric
+              </label>
+              <select
+                className="w-64 px-4 py-2 border-2 border-gray-300 rounded-lg text-sm bg-white cursor-pointer focus:outline-none focus:border-blue-500"
+                value={coverageMetric}
+                onChange={(e) => setCoverageMetric(e.target.value)}
+              >
+                <option value="user-story">Covered by User Story</option>
+                <option value="test-plan">Test Plan</option>
+              </select>
+            </div>
 
-            {data.metric === "user-story" ? (
+            {coverageMetric === "user-story" ? (
               <div className="space-y-6">
                 {data.userStories.map((item) => (
                   <div key={item.id}>
@@ -922,7 +1079,6 @@ function App() {
                       </td>
                       <td className="py-3 px-4 text-center">
                         <button className="text-gray-500 hover:text-gray-700">
-                          {/* HORIZONTAL KEBAB (3 dots) */}
                           <svg
                             width="20"
                             height="20"
@@ -953,51 +1109,103 @@ function App() {
               <CopyButton />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <div className="bg-blue-100 rounded-lg p-5 text-center">
-                <div className="text-3xl font-bold text-blue-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${
+                    data.colors?.totalTestCases || "#3b82f6"
+                  }20`,
+                }}
+              >
+                <div
+                  className="text-3xl font-bold"
+                  style={{ color: data.colors?.totalTestCases || "#3b82f6" }}
+                >
                   {data.totalTestCases}
                 </div>
-                <div className="text-xs font-semibold text-blue-900 mt-2">
+                <div className="text-xs font-semibold text-gray-900 mt-2">
                   Total Test Cases
                 </div>
               </div>
-              <div className="bg-purple-100 rounded-lg p-5 text-center">
-                <div className="text-3xl font-bold text-purple-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${
+                    data.colors?.activeSuites || "#a855f7"
+                  }20`,
+                }}
+              >
+                <div
+                  className="text-3xl font-bold"
+                  style={{ color: data.colors?.activeSuites || "#a855f7" }}
+                >
                   {data.activeSuites}
                 </div>
-                <div className="text-xs font-semibold text-purple-900 mt-2">
+                <div className="text-xs font-semibold text-gray-900 mt-2">
                   Active Suites
                 </div>
               </div>
-              <div className="bg-green-100 rounded-lg p-5 text-center">
-                <div className="text-3xl font-bold text-green-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.passed || "#22c55e"}20`,
+                }}
+              >
+                <div
+                  className="text-3xl font-bold"
+                  style={{ color: data.colors?.passed || "#22c55e" }}
+                >
                   {data.passed}
                 </div>
-                <div className="text-xs font-semibold text-green-900 mt-2">
+                <div className="text-xs font-semibold text-gray-900 mt-2">
                   Passed
                 </div>
               </div>
-              <div className="bg-red-100 rounded-lg p-5 text-center">
-                <div className="text-3xl font-bold text-red-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.failed || "#ef4444"}20`,
+                }}
+              >
+                <div
+                  className="text-3xl font-bold"
+                  style={{ color: data.colors?.failed || "#ef4444" }}
+                >
                   {data.failed}
                 </div>
-                <div className="text-xs font-semibold text-red-900 mt-2">
+                <div className="text-xs font-semibold text-gray-900 mt-2">
                   Failed
                 </div>
               </div>
-              <div className="bg-gray-100 rounded-lg p-5 text-center">
-                <div className="text-3xl font-bold text-gray-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.blocked || "#9ca3af"}20`,
+                }}
+              >
+                <div
+                  className="text-3xl font-bold"
+                  style={{ color: data.colors?.blocked || "#9ca3af" }}
+                >
                   {data.blocked}
                 </div>
                 <div className="text-xs font-semibold text-gray-900 mt-2">
                   Blocked
                 </div>
               </div>
-              <div className="bg-yellow-100 rounded-lg p-5 text-center">
-                <div className="text-3xl font-bold text-yellow-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.noRun || "#fbbf24"}20`,
+                }}
+              >
+                <div
+                  className="text-3xl font-bold"
+                  style={{ color: data.colors?.noRun || "#fbbf24" }}
+                >
                   {data.noRun}
                 </div>
-                <div className="text-xs font-semibold text-yellow-900 mt-2">
+                <div className="text-xs font-semibold text-gray-900 mt-2">
                   No Run
                 </div>
               </div>
@@ -1005,114 +1213,23 @@ function App() {
           </div>
         )}
 
-        {/* IMPROVED PIE CHART WITH ECHARTS */}
+        {/* FIXED PIE CHART - NO DROPDOWN */}
         {selectedChart === "execution-status" && (
           <div ref={chartRef} className="bg-white rounded-xl shadow-lg p-8">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
-                  Overall Execution Status
+                  Execution by Platform
                 </h2>
                 <p className="text-sm text-gray-600 mt-2">
-                  Total: {data.total} Test Cases
+                  Cross-platform test results breakdown
                 </p>
               </div>
               <CopyButton />
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-12">
-              {/* ECHARTS PIE CHART */}
-              <div className="w-96 h-96">
-                <ReactECharts
-                  option={{
-                    tooltip: {
-                      trigger: "item",
-                      formatter: "{a} <br/>{b}: {c} ({d}%)",
-                    },
-                    legend: {
-                      show: false,
-                    },
-                    series: [
-                      {
-                        name: "Test Status",
-                        type: "pie",
-                        radius: ["40%", "70%"],
-                        avoidLabelOverlap: false,
-                        itemStyle: {
-                          borderRadius: 10,
-                          borderColor: "#fff",
-                          borderWidth: 2,
-                        },
-                        label: {
-                          show: false,
-                          position: "center",
-                        },
-                        emphasis: {
-                          label: {
-                            show: true,
-                            fontSize: 32,
-                            fontWeight: "bold",
-                            formatter: function (params) {
-                              return (
-                                Math.round((data.passed / data.total) * 100) +
-                                "%\nPass Rate"
-                              );
-                            },
-                          },
-                        },
-                        labelLine: {
-                          show: false,
-                        },
-                        data: [
-                          {
-                            value: data.passed,
-                            name: "Passed",
-                            itemStyle: {
-                              color: data.colors?.passed || "#3cb371",
-                            },
-                          },
-                          {
-                            value: data.failed,
-                            name: "Failed",
-                            itemStyle: {
-                              color: data.colors?.failed || "#ff8c69",
-                            },
-                          },
-                          {
-                            value: data.blocked,
-                            name: "Blocked",
-                            itemStyle: {
-                              color: data.colors?.blocked || "#c0c0c0",
-                            },
-                          },
-                          {
-                            value: data.noRun,
-                            name: "No Run",
-                            itemStyle: {
-                              color: data.colors?.noRun || "#ffd700",
-                            },
-                          },
-                        ],
-                      },
-                    ],
-                    graphic: {
-                      type: "text",
-                      left: "center",
-                      top: "center",
-                      style: {
-                        text:
-                          Math.round((data.passed / data.total) * 100) +
-                          "%\nPass Rate",
-                        textAlign: "center",
-                        fill: "#333",
-                        fontSize: 32,
-                        fontWeight: "bold",
-                      },
-                    },
-                  }}
-                  style={{ height: "100%", width: "100%" }}
-                />
-              </div>
+              <PieChart data={data} />
 
               <div className="flex-1 space-y-4 w-full">
                 <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
@@ -1196,313 +1313,536 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* QUICK INSIGHT BOX */}
+            <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+              <div className="flex items-start gap-3">
+                <svg
+                  className="w-6 h-6 text-blue-600 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">
+                    Quick Insight:
+                  </p>
+                  <p className="text-sm text-blue-800 mt-1">
+                    Chrome has the highest test volume (142 tests) with 78% pass
+                    rate. Firefox shows 18% failure rate requiring
+                    investigation.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {selectedChart === "suite-distribution" && (
-          <div ref={chartRef} className="bg-white rounded-xl shadow-lg p-8">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">
+        {/* COMBINED LAB CHARTS WITH DROPDOWN */}
+        {selectedChart === "lab-combined" && (
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            {/* SELECT LAB METRIC DROPDOWN */}
+            <div className="mb-6 p-6 border-2 border-green-500 rounded-lg bg-green-50">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Lab Metric:
+              </label>
+              <select
+                className="w-64 px-4 py-2 border-2 border-gray-300 rounded-lg text-sm bg-white cursor-pointer focus:outline-none focus:border-blue-500"
+                value={labMetric}
+                onChange={(e) => setLabMetric(e.target.value)}
+              >
+                <option value="suite-distribution">
                   Suite Status Distribution
-                </h2>
-                <p className="text-sm text-gray-600 mt-2">
-                  Total Suites: {data.total}
-                </p>
-              </div>
-              <CopyButton />
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between mb-3 text-base font-semibold">
-                  <span className="text-gray-800">In Progress</span>
-                  <span className="text-gray-600">
-                    {data.inProgress} Suites
-                  </span>
-                </div>
-                <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden">
-                  <div
-                    className="flex items-center px-4 text-white font-bold text-sm"
-                    style={{
-                      width: `${(data.inProgress / data.total) * 100}%`,
-                      backgroundColor: data.colors?.inProgress || "#4169e1",
-                    }}
-                  >
-                    {Math.round((data.inProgress / data.total) * 100)}%
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-3 text-base font-semibold">
-                  <span className="text-gray-800">Completed</span>
-                  <span className="text-gray-600">{data.completed} Suites</span>
-                </div>
-                <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden">
-                  <div
-                    className="flex items-center px-4 text-white font-bold text-sm"
-                    style={{
-                      width: `${(data.completed / data.total) * 100}%`,
-                      backgroundColor: data.colors?.completed || "#3cb371",
-                    }}
-                  >
-                    {Math.round((data.completed / data.total) * 100)}%
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-3 text-base font-semibold">
-                  <span className="text-gray-800">Not Started</span>
-                  <span className="text-gray-600">
-                    {data.notStarted} Suites
-                  </span>
-                </div>
-                <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden">
-                  <div
-                    className="flex items-center px-4 text-white font-bold text-sm"
-                    style={{
-                      width: `${(data.notStarted / data.total) * 100}%`,
-                      backgroundColor: data.colors?.notStarted || "#c0c0c0",
-                    }}
-                  >
-                    {Math.round((data.notStarted / data.total) * 100)}%
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-10 mt-8 pt-6 border-t-2 border-gray-100 text-sm font-semibold">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{
-                    backgroundColor: data.colors?.inProgress || "#4169e1",
-                  }}
-                ></div>
-                <span className="text-gray-700">In Progress</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{
-                    backgroundColor: data.colors?.completed || "#3cb371",
-                  }}
-                ></div>
-                <span className="text-gray-700">Completed</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{
-                    backgroundColor: data.colors?.notStarted || "#c0c0c0",
-                  }}
-                ></div>
-                <span className="text-gray-700">Not Started</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* IMPROVED PLATFORM EXECUTION - BETTER SMALL VALUE DISPLAY */}
-        {selectedChart === "platform-execution" && (
-          <div ref={chartRef} className="bg-white rounded-xl shadow-lg p-8">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">
+                </option>
+                <option value="platform-execution">
                   Execution by Platform
-                </h2>
-                <p className="text-sm text-gray-600 mt-2">
-                  Cross-platform test results breakdown
-                </p>
-              </div>
-              <CopyButton />
+                </option>
+                <option value="daily-execution">
+                  Daily Execution Progress
+                </option>
+              </select>
             </div>
 
-            <div className="space-y-6">
-              {data.platforms.map((item, index) => (
-                <div key={index}>
-                  <div className="flex justify-between mb-3 text-base font-semibold">
-                    <strong className="text-gray-800">{item.platform}</strong>
-                    <span className="text-gray-600">{item.total} Tests</span>
+            {/* SUITE DISTRIBUTION */}
+            {labMetric === "suite-distribution" && (
+              <div ref={chartRef} className="bg-white">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Suite Status Distribution
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Test Suite workload and progress overview
+                    </p>
                   </div>
-
-                  {/* Stacked Bar */}
-                  <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden mb-2">
-                    {item.pass > 0 && (
-                      <div
-                        className="flex items-center justify-center text-white font-bold text-sm"
-                        style={{
-                          width: `${(item.pass / item.total) * 100}%`,
-                          backgroundColor: data.colors?.pass || "#3cb371",
-                          minWidth: item.pass > 0 ? "60px" : "0",
-                        }}
-                      >
-                        {item.pass}
-                      </div>
-                    )}
-                    {item.fail > 0 && (
-                      <div
-                        className="flex items-center justify-center text-white font-bold text-sm"
-                        style={{
-                          width: `${(item.fail / item.total) * 100}%`,
-                          backgroundColor: data.colors?.fail || "#ff8c69",
-                          minWidth: item.fail > 0 ? "50px" : "0",
-                        }}
-                      >
-                        {item.fail}
-                      </div>
-                    )}
-                    {item.blocked > 0 && (
-                      <div
-                        className="flex items-center justify-center font-bold text-sm text-gray-800"
-                        style={{
-                          width: `${(item.blocked / item.total) * 100}%`,
-                          backgroundColor: data.colors?.blocked || "#c0c0c0",
-                          minWidth: item.blocked > 0 ? "50px" : "0",
-                        }}
-                      >
-                        {item.blocked}
-                      </div>
-                    )}
-                    {item.noRun > 0 && (
-                      <div
-                        className="flex items-center justify-center font-bold text-sm text-gray-800"
-                        style={{
-                          width: `${(item.noRun / item.total) * 100}%`,
-                          backgroundColor: data.colors?.noRun || "#ffd700",
-                          minWidth: item.noRun > 0 ? "50px" : "0",
-                        }}
-                      >
-                        {item.noRun}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Detailed breakdown below bar */}
-                  <div className="flex gap-4 text-xs text-gray-600 ml-2">
-                    <span>
-                      Pass:{" "}
-                      <strong className="text-green-700">{item.pass}</strong>
-                    </span>
-                    <span>
-                      Fail:{" "}
-                      <strong className="text-red-700">{item.fail}</strong>
-                    </span>
-                    <span>
-                      Blocked:{" "}
-                      <strong className="text-gray-700">{item.blocked}</strong>
-                    </span>
-                    {item.noRun > 0 && (
-                      <span>
-                        No Run:{" "}
-                        <strong className="text-yellow-700">
-                          {item.noRun}
-                        </strong>
-                      </span>
-                    )}
-                  </div>
+                  <CopyButton />
                 </div>
-              ))}
-            </div>
 
-            <div className="flex justify-center gap-10 mt-8 pt-6 border-t-2 border-gray-100 text-sm font-semibold">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{ backgroundColor: data.colors?.pass || "#3cb371" }}
-                ></div>
-                <span className="text-gray-700">Pass</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{ backgroundColor: data.colors?.fail || "#ff8c69" }}
-                ></div>
-                <span className="text-gray-700">Fail</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{ backgroundColor: data.colors?.blocked || "#c0c0c0" }}
-                ></div>
-                <span className="text-gray-700">Blocked</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{ backgroundColor: data.colors?.noRun || "#ffd700" }}
-                ></div>
-                <span className="text-gray-700">No Run</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* DAILY EXECUTION - HORIZONTAL BARS */}
-        {selectedChart === "daily-execution" && (
-          <div ref={chartRef} className="bg-white rounded-xl shadow-lg p-8">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Daily Execution
-                </h2>
-                <p className="text-sm text-gray-600 mt-2">
-                  Test Velocity and Execution Trends
-                </p>
-              </div>
-              <CopyButton />
-            </div>
-
-            <div className="space-y-5">
-              {data.days.map((item, index) => (
-                <div key={index}>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-800">
-                      {item.date}
-                    </span>
-                    <span className="text-sm text-gray-600">{item.label}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-12 rounded-lg shadow-md overflow-hidden bg-gray-100">
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between mb-3 text-base font-semibold">
+                      <span className="text-gray-800">In Progress</span>
+                      <span className="text-gray-600">
+                        {data.suiteDistribution.inProgress} Suites (
+                        {Math.round(
+                          (data.suiteDistribution.inProgress /
+                            data.suiteDistribution.total) *
+                            100
+                        )}
+                        %)
+                      </span>
+                    </div>
+                    <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden">
                       <div
-                        className="h-full flex items-center px-4 text-white font-bold text-sm"
+                        className="flex items-center px-4 text-white font-bold text-sm"
                         style={{
-                          width: `${(item.tests / 78) * 100}%`,
+                          width: `${
+                            (data.suiteDistribution.inProgress /
+                              data.suiteDistribution.total) *
+                            100
+                          }%`,
                           backgroundColor:
-                            item.day === "today"
-                              ? data.colors?.today || "#4169e1"
-                              : data.colors?.completed || "#3cb371",
-                          minWidth: "80px",
+                            data.suiteDistribution.colors?.inProgress ||
+                            "#4169e1",
                         }}
                       >
-                        {item.tests} Tests
+                        {data.suiteDistribution.inProgress} Suites
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-3 text-base font-semibold">
+                      <span className="text-gray-800">Completed</span>
+                      <span className="text-gray-600">
+                        {data.suiteDistribution.completed} Suites (
+                        {Math.round(
+                          (data.suiteDistribution.completed /
+                            data.suiteDistribution.total) *
+                            100
+                        )}
+                        %)
+                      </span>
+                    </div>
+                    <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden">
+                      <div
+                        className="flex items-center px-4 text-white font-bold text-sm"
+                        style={{
+                          width: `${
+                            (data.suiteDistribution.completed /
+                              data.suiteDistribution.total) *
+                            100
+                          }%`,
+                          backgroundColor:
+                            data.suiteDistribution.colors?.completed ||
+                            "#3cb371",
+                        }}
+                      >
+                        {data.suiteDistribution.completed} Suites
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-3 text-base font-semibold">
+                      <span className="text-gray-800">Not Started</span>
+                      <span className="text-gray-600">
+                        {data.suiteDistribution.notStarted} Suites (
+                        {Math.round(
+                          (data.suiteDistribution.notStarted /
+                            data.suiteDistribution.total) *
+                            100
+                        )}
+                        %)
+                      </span>
+                    </div>
+                    <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden">
+                      <div
+                        className="flex items-center px-4 text-white font-bold text-sm"
+                        style={{
+                          width: `${
+                            (data.suiteDistribution.notStarted /
+                              data.suiteDistribution.total) *
+                            100
+                          }%`,
+                          backgroundColor:
+                            data.suiteDistribution.colors?.notStarted ||
+                            "#c0c0c0",
+                        }}
+                      >
+                        {data.suiteDistribution.notStarted} Suites
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="flex justify-center gap-10 mt-8 pt-6 border-t-2 border-gray-100 text-sm font-semibold">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{
-                    backgroundColor: data.colors?.completed || "#3cb371",
-                  }}
-                ></div>
-                <span className="text-gray-700">Completed</span>
+                <div className="flex justify-center gap-10 mt-8 pt-6 border-t-2 border-gray-100 text-sm font-semibold">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.suiteDistribution.colors?.inProgress ||
+                          "#4169e1",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">In Progress</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.suiteDistribution.colors?.completed || "#3cb371",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">Completed</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.suiteDistribution.colors?.notStarted ||
+                          "#c0c0c0",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">Not Started</span>
+                  </div>
+                </div>
+
+                {/* QUICK INSIGHT BOX */}
+                <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="w-6 h-6 text-blue-600 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-semibold text-blue-900">
+                        Quick Insight:
+                      </p>
+                      <p className="text-sm text-blue-800 mt-1">
+                        76.2% pass rate for selected test plan (Sprint 34). 34
+                        failures require attention, primarily in Reporting and
+                        Mobile suites. Apply different filters to update this
+                        view.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-5 h-5 rounded"
-                  style={{ backgroundColor: data.colors?.today || "#4169e1" }}
-                ></div>
-                <span className="text-gray-700">Today</span>
+            )}
+
+            {/* PLATFORM EXECUTION */}
+            {labMetric === "platform-execution" && (
+              <div ref={chartRef} className="bg-white">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Execution by Platform
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Cross-platform test results breakdown
+                    </p>
+                  </div>
+                  <CopyButton />
+                </div>
+
+                <div className="space-y-6">
+                  {data.platformExecution.platforms.map((item, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between mb-3 text-base font-semibold">
+                        <strong className="text-gray-800">
+                          {item.platform}
+                        </strong>
+                        <span className="text-gray-600">
+                          {item.total} Tests
+                        </span>
+                      </div>
+
+                      {/* Stacked Bar */}
+                      <div className="flex w-full h-14 rounded-lg shadow-md overflow-hidden mb-2">
+                        {item.pass > 0 && (
+                          <div
+                            className="flex items-center justify-center text-white font-bold text-sm"
+                            style={{
+                              width: `${(item.pass / item.total) * 100}%`,
+                              backgroundColor:
+                                data.platformExecution.colors?.pass ||
+                                "#3cb371",
+                              minWidth: item.pass > 0 ? "60px" : "0",
+                            }}
+                          >
+                            {item.pass}
+                          </div>
+                        )}
+                        {item.fail > 0 && (
+                          <div
+                            className="flex items-center justify-center text-white font-bold text-sm"
+                            style={{
+                              width: `${(item.fail / item.total) * 100}%`,
+                              backgroundColor:
+                                data.platformExecution.colors?.fail ||
+                                "#ff8c69",
+                              minWidth: item.fail > 0 ? "50px" : "0",
+                            }}
+                          >
+                            {item.fail}
+                          </div>
+                        )}
+                        {item.blocked > 0 && (
+                          <div
+                            className="flex items-center justify-center font-bold text-sm text-gray-800"
+                            style={{
+                              width: `${(item.blocked / item.total) * 100}%`,
+                              backgroundColor:
+                                data.platformExecution.colors?.blocked ||
+                                "#c0c0c0",
+                              minWidth: item.blocked > 0 ? "50px" : "0",
+                            }}
+                          >
+                            {item.blocked}
+                          </div>
+                        )}
+                        {item.noRun > 0 && (
+                          <div
+                            className="flex items-center justify-center font-bold text-sm text-gray-800"
+                            style={{
+                              width: `${(item.noRun / item.total) * 100}%`,
+                              backgroundColor:
+                                data.platformExecution.colors?.noRun ||
+                                "#ffd700",
+                              minWidth: item.noRun > 0 ? "50px" : "0",
+                            }}
+                          >
+                            {item.noRun}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Detailed breakdown below bar */}
+                      <div className="flex gap-4 text-xs text-gray-600 ml-2">
+                        <span>
+                          Pass:{" "}
+                          <strong className="text-green-700">
+                            {item.pass}
+                          </strong>
+                        </span>
+                        <span>
+                          Fail:{" "}
+                          <strong className="text-red-700">{item.fail}</strong>
+                        </span>
+                        <span>
+                          Blocked:{" "}
+                          <strong className="text-gray-700">
+                            {item.blocked}
+                          </strong>
+                        </span>
+                        {item.noRun > 0 && (
+                          <span>
+                            No Run:{" "}
+                            <strong className="text-yellow-700">
+                              {item.noRun}
+                            </strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-center gap-10 mt-8 pt-6 border-t-2 border-gray-100 text-sm font-semibold">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.platformExecution.colors?.pass || "#3cb371",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">Pass</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.platformExecution.colors?.fail || "#ff8c69",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">Fail</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.platformExecution.colors?.blocked || "#c0c0c0",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">Blocked</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.platformExecution.colors?.noRun || "#ffd700",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">No Run</span>
+                  </div>
+                </div>
+
+                {/* QUICK INSIGHT BOX */}
+                <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="w-6 h-6 text-blue-600 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-semibold text-blue-900">
+                        Quick Insight:
+                      </p>
+                      <p className="text-sm text-blue-800 mt-1">
+                        Chrome has the highest test volume (142 tests) with 78%
+                        pass rate. Firefox shows 18% failure rate requiring
+                        investigation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* DAILY EXECUTION */}
+            {labMetric === "daily-execution" && (
+              <div ref={chartRef} className="bg-white">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Daily Execution
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Test Velocity and Execution Trends
+                    </p>
+                  </div>
+                  <CopyButton />
+                </div>
+
+                <div className="space-y-5">
+                  {data.dailyExecution.days.map((item, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">
+                          {item.date}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {item.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-12 rounded-lg shadow-md overflow-hidden bg-gray-100">
+                          <div
+                            className="h-full flex items-center px-4 text-white font-bold text-sm"
+                            style={{
+                              width: `${(item.tests / 78) * 100}%`,
+                              backgroundColor:
+                                item.day === "today"
+                                  ? data.dailyExecution.colors?.today ||
+                                    "#4169e1"
+                                  : data.dailyExecution.colors?.completed ||
+                                    "#3cb371",
+                              minWidth: "80px",
+                            }}
+                          >
+                            {item.tests} Tests
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-center gap-10 mt-8 pt-6 border-t-2 border-gray-100 text-sm font-semibold">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.dailyExecution.colors?.completed || "#3cb371",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">Completed</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded"
+                      style={{
+                        backgroundColor:
+                          data.dailyExecution.colors?.today || "#4169e1",
+                      }}
+                    ></div>
+                    <span className="text-gray-700">Today</span>
+                  </div>
+                </div>
+
+                {/* QUICK INSIGHT BOX */}
+                <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="w-6 h-6 text-blue-600 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-semibold text-blue-900">
+                        Quick Insight:
+                      </p>
+                      <p className="text-sm text-blue-800 mt-1">
+                        Average velocity: 49.6 tests/day - Peak productivity: 78
+                        Tests (Weds) - Today's progress: 11 tests and counting
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1516,43 +1856,83 @@ function App() {
               <CopyButton />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-              <div className="bg-gray-100 rounded-lg p-5 text-center">
-                <div className="text-4xl font-bold text-gray-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.total || "#6b7280"}20`,
+                }}
+              >
+                <div
+                  className="text-4xl font-bold"
+                  style={{ color: data.colors?.total || "#6b7280" }}
+                >
                   {data.total}
                 </div>
                 <div className="text-sm font-semibold text-gray-900 mt-2">
                   Total Defects
                 </div>
               </div>
-              <div className="bg-red-100 rounded-lg p-5 text-center">
-                <div className="text-4xl font-bold text-red-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.critical || "#ef4444"}20`,
+                }}
+              >
+                <div
+                  className="text-4xl font-bold"
+                  style={{ color: data.colors?.critical || "#ef4444" }}
+                >
                   {data.critical}
                 </div>
-                <div className="text-sm font-semibold text-red-900 mt-2">
+                <div className="text-sm font-semibold text-gray-900 mt-2">
                   Critical
                 </div>
               </div>
-              <div className="bg-orange-100 rounded-lg p-5 text-center">
-                <div className="text-4xl font-bold text-orange-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.high || "#fb923c"}20`,
+                }}
+              >
+                <div
+                  className="text-4xl font-bold"
+                  style={{ color: data.colors?.high || "#fb923c" }}
+                >
                   {data.high}
                 </div>
-                <div className="text-sm font-semibold text-orange-900 mt-2">
+                <div className="text-sm font-semibold text-gray-900 mt-2">
                   High
                 </div>
               </div>
-              <div className="bg-yellow-100 rounded-lg p-5 text-center">
-                <div className="text-4xl font-bold text-yellow-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.medium || "#fbbf24"}20`,
+                }}
+              >
+                <div
+                  className="text-4xl font-bold"
+                  style={{ color: data.colors?.medium || "#fbbf24" }}
+                >
                   {data.medium}
                 </div>
-                <div className="text-sm font-semibold text-yellow-900 mt-2">
+                <div className="text-sm font-semibold text-gray-900 mt-2">
                   Medium
                 </div>
               </div>
-              <div className="bg-green-100 rounded-lg p-5 text-center">
-                <div className="text-4xl font-bold text-green-700">
+              <div
+                className="rounded-lg p-5 text-center"
+                style={{
+                  backgroundColor: `${data.colors?.low || "#22c55e"}20`,
+                }}
+              >
+                <div
+                  className="text-4xl font-bold"
+                  style={{ color: data.colors?.low || "#22c55e" }}
+                >
                   {data.low}
                 </div>
-                <div className="text-sm font-semibold text-green-900 mt-2">
+                <div className="text-sm font-semibold text-gray-900 mt-2">
                   Low
                 </div>
               </div>
