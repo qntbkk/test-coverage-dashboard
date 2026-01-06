@@ -56,6 +56,19 @@ function App() {
         },
       ],
     },
+    defects: {
+      total: 11,
+      statuses: [
+        { status: "OPEN", count: 4, percentage: 36.4, color: "#2196F3" },
+        { status: "REOPENED", count: 1, percentage: 9.1, color: "#E91E63" },
+        { status: "CLOSED", count: 1, percentage: 9.1, color: "#9E9E9E" },
+        { status: "NEW", count: 1, percentage: 9.1, color: "#9C27B0" },
+        { status: "FIXED", count: 1, percentage: 9.1, color: "#4CAF50" },
+        { status: "MONITOR", count: 1, percentage: 9.1, color: "#FF9800" },
+        { status: "REJECTED", count: 1, percentage: 9.1, color: "#F44336" },
+        { status: "DEFERRED", count: 1, percentage: 9.1, color: "#607D8B" },
+      ],
+    },
     platform: [
       {
         platform: "Chrome",
@@ -178,10 +191,10 @@ function App() {
               </h3>
               <pre className="text-xs text-blue-800 overflow-x-auto bg-white p-4 rounded border border-blue-200">
                 {`{
-  "coverage": {
-    "metric": "user-story" or "test-plan",
-    "userStories": [...],
-    "testPlans": [...]
+  "coverage": { ... },
+  "defects": {
+    "total": 11,
+    "statuses": [...]
   },
   "platform": [...],
   "daily": [...]
@@ -208,6 +221,79 @@ function App() {
             ← Back to Input
           </button>
         </div>
+
+        {/* Defect Status Overview */}
+        {data.defects && (
+          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Defect Status Overview
+                </h2>
+                <p className="text-sm text-gray-600 mt-2">
+                  Total Defects:{" "}
+                  <span className="font-bold text-blue-600 text-lg">
+                    {data.defects.total}
+                  </span>
+                </p>
+              </div>
+              <button className="px-5 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 flex items-center gap-2 transition-all">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Visual
+              </button>
+            </div>
+
+            {/* Status Bar */}
+            <div className="flex w-full h-20 rounded-lg shadow-md overflow-hidden mb-6">
+              {data.defects.statuses.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col items-center justify-center text-white font-bold text-xs relative group transition-all hover:opacity-90"
+                  style={{
+                    width: `${(item.count / data.defects.total) * 100}%`,
+                    backgroundColor: item.color,
+                    minWidth: "80px",
+                  }}
+                >
+                  <div className="text-[10px] uppercase tracking-wide">
+                    {item.status}
+                  </div>
+                  <div className="text-2xl font-bold">{item.count}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Legend */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {data.defects.statuses.map((item, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <div
+                    className="w-5 h-5 rounded flex-shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  ></div>
+                  <div className="text-sm">
+                    <span className="font-semibold text-gray-800">
+                      {item.status}:
+                    </span>{" "}
+                    <span className="text-gray-600">
+                      {item.count} ({item.percentage}%)
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Coverage Report */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
